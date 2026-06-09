@@ -12,7 +12,6 @@ finish-args:
   - --socket=session-bus
   - --talk-name=org.freedesktop.NetworkManager
   - --system-talk-name=org.freedesktop.NetworkManager
-  - --env=QT_QPA_PLATFORM=xcb
   - --filesystem=~/.var/app/io.github.mitexleo.ipsec_client/config:create
 modules:
   - name: ipsec-client
