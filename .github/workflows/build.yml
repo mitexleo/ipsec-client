@@ -12,9 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install deps
-        run: sudo apt-get update && sudo apt-get install -y cmake g++ qt6-base-dev libgl1-mesa-dev ruby rpm && sudo gem install fpm
-      - name: Build
-        run: mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr && make -j$(nproc)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ qt6-base-dev libgl1-mesa-dev ruby rpm flatpak flatpak-builder
+          sudo gem install fpm
+      - name: Configure and build
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+          make -j$(nproc)
       - name: Install DESTDIR
         run: DESTDIR=/tmp/ipsec-client-build cmake --install build
       - name: Package .deb
@@ -25,14 +31,41 @@ jobs:
         run: |
           VERSION=$(cat VERSION)
           fpm -s dir -t rpm -n ipsec-client -v "$VERSION" --iteration 1 --architecture x86_64 --rpm-os linux --description "IPsec VPN client" --license GPL-2.0 --url https://github.com/${{ github.repository }} -C /tmp/ipsec-client-build usr/bin/ipsec-client usr/share/applications/ipsec-client.desktop usr/share/icons/hicolor/scalable/apps/ipsec-client.svg
+      - name: Setup Flatpak runtime
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.kde.Platform//6.8 org.kde.Sdk//6.8 2>&1 | tail -5 || true
+      - name: Build Flatpak
+        run: flatpak-builder --force-clean --user --disable-cache build-dir flatpak/io.github.mitexleo.ipsec_client.yml
+      - name: Export and bundle Flatpak
+        run: |
+          flatpak build-export repo build-dir
+          flatpak build-bundle repo ipsec-client.flatpak io.github.mitexleo.ipsec_client
+      - name: List packages
+        run: ls -la *.deb *.rpm *.flatpak
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: packages
-          path: '*.deb *.rpm'
-      - name: Create Release
+          path: |
+            *.deb
+            *.rpm
+            *.flatpak
+      - name: Determine tag
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "release_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "release_tag=v$(cat VERSION)" >> $GITHUB_OUTPUT
+          fi
+      - name: Create or update release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
-          files: '*.deb *.rpm'
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          name: "ipsec-client ${{ steps.tag.outputs.release_tag }}"
+          files: |
+            *.deb
+            *.rpm
+            *.flatpak
           generate_release_notes: true
