@@ -121,11 +121,14 @@ void MainWindow::refreshList()
         QStringList parts = line.split(':');
         if (parts.size() < 4)
             continue;
-        // Only show strongswan VPN connections.  nmcli's TYPE column
-        // reports "vpn" for all VPNs; the actual plugin is in
-        // vpn.service-type (e.g.
-        // "org.freedesktop.NetworkManager.strongswan").
-        if (parts[2] != "vpn" || !parts[3].contains("strongswan"))
+        // nmcli's TYPE column reports "vpn" for all VPNs; the actual
+        // plugin is in vpn.service-type (e.g.
+        // "org.freedesktop.NetworkManager.strongswan" or
+        // "org.freedesktop.NetworkManager.vpnc").
+        if (parts[2] != "vpn")
+            continue;
+        QString serviceType = parts[3];
+        if (!serviceType.contains("strongswan") && !serviceType.contains("vpnc"))
             continue;
         QString name = parts[0];
         QString uuid = parts[1];
@@ -133,6 +136,7 @@ void MainWindow::refreshList()
         QString display = isActive ? "(Connected) " + name : name;
         auto *item = new QListWidgetItem(display, m_connectionList);
         item->setData(Qt::UserRole, uuid);
+        item->setData(Qt::UserRole + 1, serviceType);
     }
 
     bool empty = m_connectionList->count() == 0;
@@ -160,6 +164,21 @@ void MainWindow::onEdit()
     QMap<QString, QString> data;
     data["name"] = item->text().remove(QRegularExpression("^\\(Connected\\) "));
     data["uuid"] = m_selectedUuid;
+
+    // Fetch the detailed connection data for editing
+    auto fetchSetting = [&](const QString &field) -> QString {
+        QProcess proc;
+        if (m_nmcliPrefix.isEmpty())
+            proc.start("nmcli", {"-g", field, "con", "show", m_selectedUuid});
+        else
+            proc.start("flatpak-spawn", {"--host", "nmcli", "-g", field, "con", "show", m_selectedUuid});
+        proc.waitForFinished(3000);
+        return QString::fromUtf8(proc.readAllStandardOutput()).trimmed();
+    };
+
+    data["service-type"] = item->data(Qt::UserRole + 1).toString();
+    data["vpn.data"] = fetchSetting("vpn.data");
+    data["vpn.secrets"] = fetchSetting("vpn.secrets");
 
     VpnDialog dlg(VpnDialog::Edit, this, data, m_nmcliPrefix);
     if (dlg.exec() == QDialog::Accepted)
@@ -331,7 +350,7 @@ void MainWindow::onHelp()
 {
     QMessageBox::about(this, "About IPsec Client",
         QStringLiteral("<h3>IPsec Client v%1</h3>"
-        "<p>A GUI for managing strongSwan VPN connections.</p>"
+        "<p>A GUI for managing strongSwan and Cisco (vpnc) VPN connections.</p>"
         "<p>Use the <b>Add</b> button to create a new connection, "
         "or <b>Import</b> to load a .conf or .nmconnection file.</p>"
         "<p>Select a connection and click <b>Connect</b>/<b>Disconnect</b> to toggle it.</p>")
