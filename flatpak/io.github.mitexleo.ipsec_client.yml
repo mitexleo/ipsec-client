@@ -14,6 +14,7 @@ finish-args:
   - --talk-name=org.freedesktop.NetworkManager
   - --system-talk-name=org.freedesktop.NetworkManager
   - --talk-name=org.freedesktop.Flatpak
+  - --filesystem=host:ro
   - --filesystem=~/.var/app/io.github.mitexleo.ipsec_client/config:create
 modules:
   - name: ipsec-client
