@@ -1,14 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#33b89e" stop-opacity="1" />
+      <stop offset="100%" stop-color="#1a7a64" stop-opacity="1" />
+    </linearGradient>
     <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2b9c8c;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a6b5f;stop-opacity:1" />
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#e6f2ef" stop-opacity="0.95" />
     </linearGradient>
   </defs>
-  <path d="M32 4 L8 14 L8 30 C8 46 20 56 32 60 C44 56 56 46 56 30 L56 14 Z"
-        fill="url(#shieldGrad)" stroke="#137a6a" stroke-width="1.5"/>
-  <circle cx="32" cy="28" r="8" fill="none" stroke="#ffffff" stroke-width="2.5"/>
-  <path d="M32 32 L32 40" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M28 20 L28 16 C28 13 30 11 32 11 C34 11 36 13 36 16 L36 20"
-        fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <rect
+        x="8"
+        y="8"
+        width="112"
+        height="112"
+        rx="24"
+        ry="24"
+        fill="url(#bgGrad)"
+    />
+  <path
+        d="M64 18 L22 32 L22 56 C22 78 40 96 64 108 C88 96 106 78 106 56 L106 32 Z"
+        fill="url(#shieldGrad)"
+    />
+  <path
+        d="M64 22 L28 34 L28 56 C28 75 44 92 64 102 C84 92 100 75 100 56 L100 34 Z"
+        fill="none"
+        stroke="#1a7a64"
+        stroke-width="1.5"
+        opacity="0.3"
+    />
+  <circle
+        cx="64"
+        cy="62"
+        r="16"
+        fill="none"
+        stroke="#1a7a64"
+        stroke-width="4.5"
+    />
+  <path
+        d="M64 62 L64 80"
+        stroke="#1a7a64"
+        stroke-width="4.5"
+        stroke-linecap="round"
+    />
+  <path
+        d="M54 50 L54 42 C54 36 58 32 64 32 C70 32 74 36 74 42 L74 50"
+        fill="none"
+        stroke="#1a7a64"
+        stroke-width="4.5"
+        stroke-linecap="round"
+    />
 </svg>

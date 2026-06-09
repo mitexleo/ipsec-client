@@ -215,6 +215,9 @@ void MainWindow::onImport()
 {
     QFileDialog dialog(this, "Import VPN Configuration");
     dialog.setFileMode(QFileDialog::ExistingFile);
+    // Use Qt dialog instead of native KDE/GNOME portal dialog to
+    // avoid KConfig/KIO crashes under the KDE Flatpak runtime.
+    dialog.setOption(QFileDialog::DontUseNativeDialog);
     dialog.setOption(QFileDialog::ReadOnly);
     dialog.setNameFilter("All files (*)");
     if (dialog.exec() != QDialog::Accepted)
