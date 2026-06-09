@@ -45,11 +45,15 @@ jobs:
       - name: List packages
         run: ls -la ipsec-client*.deb ipsec-client*.rpm
 
+      - name: Get version
+        id: get_version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "ipsec-client v$(cat VERSION)"
-          tag_name: "v$(cat VERSION)"
+          name: "ipsec-client v${{ steps.get_version.outputs.version }}"
+          tag_name: "v${{ steps.get_version.outputs.version }}"
           files: |
             ipsec-client_*.deb
             ipsec-client*.rpm
@@ -76,6 +80,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
 
       - name: Install flatpak-builder
         run: |
@@ -115,4 +123,4 @@ jobs:
         if: always()
         with:
           files: ipsec-client.flatpak
-          tag_name: "v$(cat VERSION)"
+          tag_name: "v${{ steps.get_version.outputs.version }}"
