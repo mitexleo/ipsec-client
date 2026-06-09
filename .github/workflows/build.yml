@@ -1,162 +1,38 @@
-name: Build and Package
-
+name: Build and Release
 on:
   push:
-    branches:
-      - main
-    tags:
-      - v*
+    branches: [main]
+    tags: [v*]
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
   build:
-    name: Build packages
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++ qt6-base-dev libgl1-mesa-dev ruby rpm
-          sudo gem install fpm
-
-      - name: Configure and build
-        run: |
-          mkdir build && cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-          make -j$(nproc)
-
-      - name: Install DESTDIR for packaging
-        run: |
-          DESTDIR=/tmp/ipsec-client-build cmake --install build
-
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ qt6-base-dev libgl1-mesa-dev ruby rpm && sudo gem install fpm
+      - name: Build
+        run: mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr && make -j$(nproc)
+      - name: Install DESTDIR
+        run: DESTDIR=/tmp/ipsec-client-build cmake --install build
       - name: Package .deb
         run: |
           VERSION=$(cat VERSION)
-          fpm \
-            -s dir \
-            -t deb \
-            -n ipsec-client \
-            -v "$VERSION" \
-            --iteration 1 \
-            --architecture amd64 \
-            --description "GUI for managing strongSwan IPsec VPN connections" \
-            --license GPL-2.0-or-later \
-            --url "https://github.com/${{ github.repository }}" \
-            --maintainer "${{ github.repository_owner }}" \
-            --deb-no-default-config-files \
-            --after-install scripts/postinst \
-            -C /tmp/ipsec-client-build \
-            usr/bin/ipsec-client \
-            usr/share/applications/ipsec-client.desktop \
-            usr/share/icons/hicolor/scalable/apps/ipsec-client.svg
-
+          fpm -s dir -t deb -n ipsec-client -v "$VERSION" --iteration 1 --architecture amd64 --description "IPsec VPN client" --license GPL-2.0 --url https://github.com/${{ github.repository }} -C /tmp/ipsec-client-build usr/bin/ipsec-client usr/share/applications/ipsec-client.desktop usr/share/icons/hicolor/scalable/apps/ipsec-client.svg
       - name: Package .rpm
         run: |
           VERSION=$(cat VERSION)
-          fpm \
-            -s dir \
-            -t rpm \
-            -n ipsec-client \
-            -v "$VERSION" \
-            --iteration 1 \
-            --architecture x86_64 \
-            --rpm-os linux \
-            --description "GUI for managing strongSwan IPsec VPN connections" \
-            --license GPL-2.0-or-later \
-            --url "https://github.com/${{ github.repository }}" \
-            --maintainer "${{ github.repository_owner }}" \
-            --rpm-posttrans scripts/postinst \
-            -C /tmp/ipsec-client-build \
-            usr/bin/ipsec-client \
-            usr/share/applications/ipsec-client.desktop \
-            usr/share/icons/hicolor/scalable/apps/ipsec-client.svg
-
+          fpm -s dir -t rpm -n ipsec-client -v "$VERSION" --iteration 1 --architecture x86_64 --rpm-os linux --description "IPsec VPN client" --license GPL-2.0 --url https://github.com/${{ github.repository }} -C /tmp/ipsec-client-build usr/bin/ipsec-client usr/share/applications/ipsec-client.desktop usr/share/icons/hicolor/scalable/apps/ipsec-client.svg
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: packages
-          path: |
-            ipsec-client_*.deb
-            ipsec-client*.rpm
-
-  flatpak:
-    name: Build Flatpak
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install flatpak and flatpak-builder
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
-
-      - name: Cache Flatpak runtimes
-        id: cache-flatpak
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/flatpak
-            .flatpak-builder
-          key: flatpak-${{ runner.os }}-kde-6.8
-
-      - name: Add Flathub remote
-        if: steps.cache-flatpak.outputs.cache-hit != 'true'
-        run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-      - name: Install runtimes
-        if: steps.cache-flatpak.outputs.cache-hit != 'true'
-        run: |
-          flatpak install --user -y flathub org.kde.Platform//6.8
-          flatpak install --user -y flathub org.kde.Sdk//6.8
-
-      - name: Build Flatpak
-        run: |
-          flatpak-builder \
-            --force-clean \
-            --user \
-            --disable-cache \
-            build-dir \
-            flatpak/io.github.mitexleo.ipsec_client.yml
-
-      - name: Export and bundle
-        run: |
-          flatpak build-export repo build-dir
-          flatpak build-bundle repo ipsec-client.flatpak io.github.mitexleo.ipsec_client
-
-      - name: Upload Flatpak
-        uses: actions/upload-artifact@v4
-        with:
-          name: flatpak
-          path: ipsec-client.flatpak
-
-  release:
-    name: Create Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build, flatpak]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-
-      - name: Upload to Release
+          path: '*.deb *.rpm'
+      - name: Create Release
         uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
-          name: "ipsec-client ${{ github.ref_name }}"
-          tag_name: ${{ github.ref_name }}
-          files: |
-            *.deb
-            *.rpm
-            *.flatpak
+          files: '*.deb *.rpm'
           generate_release_notes: true
