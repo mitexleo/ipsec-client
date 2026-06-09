@@ -40,6 +40,7 @@ private:
     QLabel *m_statusLabel;
     QProcess *m_process;
     QString m_selectedUuid;
+    QString m_nmcliPrefix;
 };
 
 #endif

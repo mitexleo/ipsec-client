@@ -75,19 +75,31 @@ void MainWindow::refreshList()
 {
     m_connectionList->clear();
 
-    QProcess which;
-    which.start("which", {"nmcli"});
-    which.waitForFinished(3000);
-    if (which.exitCode() != 0) {
-        m_placeholderLabel->setText("nmcli not found.\nInstall NetworkManager.");
-        m_placeholderLabel->show();
-        m_connectionList->hide();
-        return;
+    if (m_nmcliPrefix.isEmpty()) {
+        QProcess test;
+        test.start("nmcli", {"--version"});
+        test.waitForFinished(3000);
+        if (test.exitCode() != 0) {
+            QProcess test2;
+            test2.start("flatpak-spawn", {"--host", "nmcli", "--version"});
+            test2.waitForFinished(3000);
+            if (test2.exitCode() == 0)
+                m_nmcliPrefix = "flatpak-spawn --host";
+        }
+        if (m_nmcliPrefix.isEmpty() && test.exitCode() != 0) {
+            m_placeholderLabel->setText("nmcli not found.\nInstall NetworkManager network-manager-strongswan strongswan on the host system");
+            m_placeholderLabel->show();
+            m_connectionList->hide();
+            return;
+        }
     }
 
     QStringList activeUuids;
     QProcess activeProc;
-    activeProc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show", "--active"});
+    if (m_nmcliPrefix.isEmpty())
+        activeProc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show", "--active"});
+    else
+        activeProc.start("flatpak-spawn", {"--host", "nmcli", "-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show", "--active"});
     activeProc.waitForFinished(5000);
     QString activeOutput = QString::fromUtf8(activeProc.readAllStandardOutput());
     for (const auto &line : activeOutput.split('\n', Qt::SkipEmptyParts)) {
@@ -97,7 +109,10 @@ void MainWindow::refreshList()
     }
 
     QProcess proc;
-    proc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show"});
+    if (m_nmcliPrefix.isEmpty())
+        proc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show"});
+    else
+        proc.start("flatpak-spawn", {"--host", "nmcli", "-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show"});
     proc.waitForFinished(5000);
     QString output = QString::fromUtf8(proc.readAllStandardOutput());
 
@@ -329,5 +344,8 @@ void MainWindow::onProcessFinished()
 void MainWindow::runNmcli(const QStringList &args)
 {
     m_statusLabel->setText("Running: nmcli " + args.join(' '));
-    m_process->start("nmcli", args);
+    if (m_nmcliPrefix.isEmpty())
+        m_process->start("nmcli", args);
+    else
+        m_process->start("flatpak-spawn", QStringList{"--host", "nmcli"} + args);
 }

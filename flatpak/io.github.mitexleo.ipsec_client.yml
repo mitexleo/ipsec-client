@@ -12,12 +12,16 @@ finish-args:
   - --socket=session-bus
   - --talk-name=org.freedesktop.NetworkManager
   - --system-talk-name=org.freedesktop.NetworkManager
+  - --talk-name=org.freedesktop.Flatpak
   - --filesystem=~/.var/app/io.github.mitexleo.ipsec_client/config:create
+  - --filesystem=host
 modules:
   - name: ipsec-client
     buildsystem: cmake-ninja
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+    rename-desktop-file: ipsec-client.desktop
+    rename-icon: ipsec-client
     sources:
       - type: dir
         path: ..
