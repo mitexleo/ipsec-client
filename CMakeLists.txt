@@ -25,6 +25,18 @@ add_executable(ipsec-client
     src/vpndialog.h
 )
 
+# Generate version header from VERSION file
+set(VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/version.h")
+file(WRITE "${VERSION_HEADER}"
+  "#ifndef IPSEC_CLIENT_VERSION_H\n"
+  "#define IPSEC_CLIENT_VERSION_H\n"
+  "\n"
+  "#define IPSEC_CLIENT_VERSION \"${PROJECT_VERSION}\"\n"
+  "\n"
+  "#endif // IPSEC_CLIENT_VERSION_H\n"
+)
+target_include_directories(ipsec-client PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+
 target_link_libraries(ipsec-client PRIVATE ${QT_LIBS})
 
 # CPack packaging

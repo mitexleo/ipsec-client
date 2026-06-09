@@ -18,8 +18,8 @@ public:
     explicit VpnDialog(Mode mode, QWidget *parent = nullptr,
                        const QMap<QString, QString> &connectionData = {});
 
-private slots:
-    void onAuthChanged();
+private:
+    void setupAuthVisibility();
 
 private:
     void accept() override;

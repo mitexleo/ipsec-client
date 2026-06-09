@@ -49,7 +49,7 @@ VpnDialog::VpnDialog(Mode mode, QWidget *parent,
     layout->addRow("ESP cipher:", m_espEdit);
 
     m_aggressiveCheck = new QCheckBox("Aggressive mode", this);
-    m_aggressiveCheck->setChecked(true);
+    m_aggressiveCheck->setChecked(false);
     layout->addRow(m_aggressiveCheck);
 
     m_encapCheck = new QCheckBox("Enable encapsulation", this);
@@ -70,9 +70,7 @@ VpnDialog::VpnDialog(Mode mode, QWidget *parent,
     connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(m_authCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &VpnDialog::onAuthChanged);
-    connect(m_authCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this]() { m_pskEdit->setVisible(m_authCombo->currentText() == "PSK"); });
+            this, [this]() { setupAuthVisibility(); });
 
     if (connectionData.contains("name"))
         m_nameEdit->setText(connectionData.value("name"));
@@ -97,10 +95,10 @@ VpnDialog::VpnDialog(Mode mode, QWidget *parent,
     if (connectionData.value("virtual") == "yes")
         m_virtualCheck->setChecked(true);
 
-    onAuthChanged();
+    setupAuthVisibility();
 }
 
-void VpnDialog::onAuthChanged()
+void VpnDialog::setupAuthVisibility()
 {
     bool isPsk = m_authCombo->currentText() == "PSK";
     m_pskEdit->setVisible(isPsk);

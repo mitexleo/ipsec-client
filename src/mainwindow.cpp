@@ -10,6 +10,7 @@
 #include <QSet>
 #include <QSettings>
 #include <QTextStream>
+#include "version.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -214,7 +215,6 @@ void MainWindow::onImport()
 {
     QFileDialog dialog(this, "Import VPN Configuration");
     dialog.setFileMode(QFileDialog::ExistingFile);
-    dialog.setOption(QFileDialog::DontUseNativeDialog);
     dialog.setOption(QFileDialog::ReadOnly);
     dialog.setNameFilter("All files (*)");
     if (dialog.exec() != QDialog::Accepted)
@@ -323,11 +323,12 @@ void MainWindow::onImport()
 void MainWindow::onHelp()
 {
     QMessageBox::about(this, "About IPsec Client",
-        "<h3>IPsec Client v1.x.x</h3>"
+        QStringLiteral("<h3>IPsec Client v%1</h3>"
         "<p>A GUI for managing strongSwan VPN connections.</p>"
         "<p>Use the <b>Add</b> button to create a new connection, "
         "or <b>Import</b> to load a .conf or .nmconnection file.</p>"
-        "<p>Select a connection and click <b>Connect</b>/<b>Disconnect</b> to toggle it.</p>");
+        "<p>Select a connection and click <b>Connect</b>/<b>Disconnect</b> to toggle it.</p>")
+        .arg(IPSEC_CLIENT_VERSION));
 }
 
 void MainWindow::onProcessFinished()
