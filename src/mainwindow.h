@@ -30,6 +30,7 @@ private:
     void parseConnectionList(const QString &output, const QStringList &activeUuids);
 
     QListWidget *m_connectionList;
+    QLabel *m_placeholderLabel;
     QPushButton *m_addBtn;
     QPushButton *m_editBtn;
     QPushButton *m_deleteBtn;

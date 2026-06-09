@@ -29,7 +29,16 @@ MainWindow::MainWindow(QWidget *parent)
     auto *centralWidget = new QWidget(this);
     auto *mainLayout = new QHBoxLayout(centralWidget);
 
-    mainLayout->addWidget(m_connectionList, 1);
+    auto *leftContainer = new QWidget(this);
+    auto *leftLayout = new QVBoxLayout(leftContainer);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    m_placeholderLabel = new QLabel("No VPN connections found.\nUse Add or Import to create one.", this);
+    m_placeholderLabel->setAlignment(Qt::AlignCenter);
+    m_placeholderLabel->setWordWrap(true);
+    m_placeholderLabel->setStyleSheet("color: gray; font-size: 14px;");
+    leftLayout->addWidget(m_placeholderLabel);
+    leftLayout->addWidget(m_connectionList);
+    mainLayout->addWidget(leftContainer, 3);
 
     auto *rightLayout = new QVBoxLayout;
     m_statusLabel->setWordWrap(true);
@@ -64,6 +73,18 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::refreshList()
 {
+    m_connectionList->clear();
+
+    QProcess which;
+    which.start("which", {"nmcli"});
+    which.waitForFinished(3000);
+    if (which.exitCode() != 0) {
+        m_placeholderLabel->setText("nmcli not found.\nInstall NetworkManager.");
+        m_placeholderLabel->show();
+        m_connectionList->hide();
+        return;
+    }
+
     QStringList activeUuids;
     QProcess activeProc;
     activeProc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show", "--active"});
@@ -80,8 +101,6 @@ void MainWindow::refreshList()
     proc.waitForFinished(5000);
     QString output = QString::fromUtf8(proc.readAllStandardOutput());
 
-    m_connectionList->clear();
-
     for (const auto &line : output.split('\n', Qt::SkipEmptyParts)) {
         if (!line.contains(":strongswan:"))
             continue;
@@ -95,6 +114,11 @@ void MainWindow::refreshList()
         auto *item = new QListWidgetItem(display, m_connectionList);
         item->setData(Qt::UserRole, uuid);
     }
+
+    bool empty = m_connectionList->count() == 0;
+    m_placeholderLabel->setText("No VPN connections found.\nUse Add or Import to create one.");
+    m_placeholderLabel->setVisible(empty);
+    m_connectionList->setVisible(!empty);
 }
 
 void MainWindow::onAdd()
@@ -173,8 +197,14 @@ void MainWindow::onSelectionChanged()
 
 void MainWindow::onImport()
 {
-    QString filePath = QFileDialog::getOpenFileName(this, "Import VPN Configuration",
-        QString(), "Config files (*.conf *.nmconnection);;All files (*)");
+    QFileDialog dialog(this, "Import VPN Configuration");
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setOption(QFileDialog::DontUseNativeDialog);
+    dialog.setOption(QFileDialog::ReadOnly);
+    dialog.setNameFilter("All files (*)");
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    QString filePath = dialog.selectedFiles().first();
     if (filePath.isEmpty())
         return;
 
