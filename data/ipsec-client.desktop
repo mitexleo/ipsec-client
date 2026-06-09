@@ -9,4 +9,3 @@ Categories=Network;VPN;Security;Qt;
 StartupNotify=true
 Keywords=ipsec;vpn;strongswan;
 X-AppStream-Icon=ipsec-client
-X-POP_OS-Settings-Panel=network
