@@ -1,9 +1,12 @@
 [Desktop Entry]
 Name=IPsec Client
 Comment=Manage IPsec VPN connections
-Exec=ipsec-client
+Exec=/usr/bin/ipsec-client
 Icon=ipsec-client
 Terminal=false
 Type=Application
-Categories=Network;VPN;
+Categories=Network;VPN;Security;Qt;
 StartupNotify=true
+Keywords=ipsec;vpn;strongswan;
+X-AppStream-Icon=ipsec-client
+X-POP_OS-Settings-Panel=network

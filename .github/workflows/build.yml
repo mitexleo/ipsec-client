@@ -57,6 +57,7 @@ jobs:
             --url "https://github.com/${{ github.repository }}" \
             --maintainer "${{ github.repository_owner }}" \
             --deb-no-default-config-files \
+            --after-install scripts/postinst \
             -C /tmp/ipsec-client-build \
             usr/bin/ipsec-client \
             usr/share/applications/ipsec-client.desktop \
@@ -77,6 +78,7 @@ jobs:
             --license GPL-2.0-or-later \
             --url "https://github.com/${{ github.repository }}" \
             --maintainer "${{ github.repository_owner }}" \
+            --rpm-posttrans scripts/postinst \
             -C /tmp/ipsec-client-build \
             usr/bin/ipsec-client \
             usr/share/applications/ipsec-client.desktop \
