@@ -111,17 +111,21 @@ void MainWindow::refreshList()
 
     QProcess proc;
     if (m_nmcliPrefix.isEmpty())
-        proc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show"});
+        proc.start("nmcli", {"-t", "-f", "NAME,UUID,TYPE,vpn.service-type", "con", "show"});
     else
-        proc.start("flatpak-spawn", {"--host", "nmcli", "-t", "-f", "NAME,UUID,TYPE,DEVICE", "con", "show"});
+        proc.start("flatpak-spawn", {"--host", "nmcli", "-t", "-f", "NAME,UUID,TYPE,vpn.service-type", "con", "show"});
     proc.waitForFinished(5000);
     QString output = QString::fromUtf8(proc.readAllStandardOutput());
 
     for (const auto &line : output.split('\n', Qt::SkipEmptyParts)) {
-        if (!line.contains(":strongswan:"))
-            continue;
         QStringList parts = line.split(':');
-        if (parts.size() < 2)
+        if (parts.size() < 4)
+            continue;
+        // Only show strongswan VPN connections.  nmcli's TYPE column
+        // reports "vpn" for all VPNs; the actual plugin is in
+        // vpn.service-type (e.g.
+        // "org.freedesktop.NetworkManager.strongswan").
+        if (parts[2] != "vpn" || !parts[3].contains("strongswan"))
             continue;
         QString name = parts[0];
         QString uuid = parts[1];
