@@ -139,7 +139,7 @@ void MainWindow::refreshList()
 
 void MainWindow::onAdd()
 {
-    VpnDialog dlg(VpnDialog::Add, this);
+    VpnDialog dlg(VpnDialog::Add, this, {}, m_nmcliPrefix);
     if (dlg.exec() == QDialog::Accepted)
         refreshList();
 }
@@ -157,7 +157,7 @@ void MainWindow::onEdit()
     data["name"] = item->text().remove(QRegularExpression("^\\(Connected\\) "));
     data["uuid"] = m_selectedUuid;
 
-    VpnDialog dlg(VpnDialog::Edit, this, data);
+    VpnDialog dlg(VpnDialog::Edit, this, data, m_nmcliPrefix);
     if (dlg.exec() == QDialog::Accepted)
         refreshList();
 }
@@ -315,7 +315,7 @@ void MainWindow::onImport()
             data["psk"] = psk;
     }
 
-    VpnDialog dlg(VpnDialog::Add, this, data);
+    VpnDialog dlg(VpnDialog::Add, this, data, m_nmcliPrefix);
     if (dlg.exec() == QDialog::Accepted)
         refreshList();
 }

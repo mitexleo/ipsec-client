@@ -7,10 +7,12 @@
 #include <QDialogButtonBox>
 
 VpnDialog::VpnDialog(Mode mode, QWidget *parent,
-                     const QMap<QString, QString> &connectionData)
+                     const QMap<QString, QString> &connectionData,
+                     const QString &nmcliPrefix)
     : QDialog(parent)
     , m_mode(mode)
     , m_connectionData(connectionData)
+    , m_nmcliPrefix(nmcliPrefix)
 {
     setWindowTitle(mode == Add ? "Add Connection" : "Edit Connection");
 
@@ -146,17 +148,7 @@ void VpnDialog::accept()
             "vpn.data", vpnData,
             "vpn.secrets", vpnSecrets
         };
-
-        QProcess proc;
-        proc.start("nmcli", args);
-        proc.waitForFinished(10000);
-
-        if (proc.exitCode() != 0) {
-            QMessageBox::critical(this, "Error",
-                QString("Failed to add connection:\n%1")
-                    .arg(QString::fromUtf8(proc.readAllStandardError())));
-            return;
-        }
+        runNmcli(args);
     } else {
         QString uuid = m_connectionData.value("uuid");
         QStringList args = {
@@ -164,18 +156,25 @@ void VpnDialog::accept()
             "vpn.data", vpnData,
             "vpn.secrets", vpnSecrets
         };
-
-        QProcess proc;
-        proc.start("nmcli", args);
-        proc.waitForFinished(10000);
-
-        if (proc.exitCode() != 0) {
-            QMessageBox::critical(this, "Error",
-                QString("Failed to modify connection:\n%1")
-                    .arg(QString::fromUtf8(proc.readAllStandardError())));
-            return;
-        }
+        runNmcli(args);
     }
 
     QDialog::accept();
+}
+
+void VpnDialog::runNmcli(const QStringList &args)
+{
+    QProcess proc;
+    if (m_nmcliPrefix.isEmpty())
+        proc.start("nmcli", args);
+    else
+        proc.start("flatpak-spawn", QStringList{"--host", "nmcli"} + args);
+    proc.waitForFinished(10000);
+
+    if (proc.exitCode() != 0) {
+        QString action = m_mode == Add ? "add" : "modify";
+        QMessageBox::critical(this, "Error",
+            QString("Failed to %1 connection:\n%2")
+                .arg(action, QString::fromUtf8(proc.readAllStandardError())));
+    }
 }

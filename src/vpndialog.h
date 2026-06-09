@@ -16,13 +16,16 @@ public:
     enum Mode { Add, Edit };
 
     explicit VpnDialog(Mode mode, QWidget *parent = nullptr,
-                       const QMap<QString, QString> &connectionData = {});
+                       const QMap<QString, QString> &connectionData = {},
+                       const QString &nmcliPrefix = {});
 
 private:
     void setupAuthVisibility();
 
 private:
     void accept() override;
+
+    void runNmcli(const QStringList &args);
 
     Mode m_mode;
     QLineEdit *m_nameEdit;
@@ -38,6 +41,7 @@ private:
     QCheckBox *m_encapCheck;
     QCheckBox *m_virtualCheck;
     QMap<QString, QString> m_connectionData;
+    QString m_nmcliPrefix;
 };
 
 #endif
