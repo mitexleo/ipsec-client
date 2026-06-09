@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(ipsec-client)
 
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" VERSION_STRING)
+string(STRIP "${VERSION_STRING}" VERSION_STRING)
+set(PROJECT_VERSION "${VERSION_STRING}")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -22,3 +26,15 @@ add_executable(ipsec-client
 )
 
 target_link_libraries(ipsec-client PRIVATE ${QT_LIBS})
+
+# CPack packaging
+set(CPACK_GENERATOR "DEB;RPM")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_NAME "ipsec-client")
+set(CPACK_PACKAGE_DESCRIPTION "IPsec VPN client application")
+set(CPACK_PACKAGE_VENDOR "IPsec Client Team")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "IPsec Client Team <team@ipsec-client.example.com>")
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_STRIP_FILES TRUE)
+
+include(CPack)
