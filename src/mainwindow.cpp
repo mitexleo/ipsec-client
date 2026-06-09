@@ -1,11 +1,15 @@
 #include "mainwindow.h"
 #include "vpndialog.h"
 
+#include <QFile>
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QRegularExpression>
 #include <QSet>
+#include <QSettings>
+#include <QTextStream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_addBtn(new QPushButton("Add", this))
     , m_editBtn(new QPushButton("Edit", this))
     , m_deleteBtn(new QPushButton("Delete", this))
+    , m_importBtn(new QPushButton("Import", this))
+    , m_helpBtn(new QPushButton("Help", this))
     , m_connectBtn(new QPushButton("Connect", this))
     , m_statusLabel(new QLabel("Ready", this))
     , m_process(new QProcess(this))
@@ -33,6 +39,8 @@ MainWindow::MainWindow(QWidget *parent)
     rightLayout->addWidget(m_addBtn);
     rightLayout->addWidget(m_editBtn);
     rightLayout->addWidget(m_deleteBtn);
+    rightLayout->addWidget(m_importBtn);
+    rightLayout->addWidget(m_helpBtn);
     mainLayout->addLayout(rightLayout);
 
     setCentralWidget(centralWidget);
@@ -44,6 +52,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_addBtn, &QPushButton::clicked, this, &MainWindow::onAdd);
     connect(m_editBtn, &QPushButton::clicked, this, &MainWindow::onEdit);
     connect(m_deleteBtn, &QPushButton::clicked, this, &MainWindow::onDelete);
+    connect(m_importBtn, &QPushButton::clicked, this, &MainWindow::onImport);
+    connect(m_helpBtn, &QPushButton::clicked, this, &MainWindow::onHelp);
     connect(m_connectBtn, &QPushButton::clicked, this, &MainWindow::onConnectToggle);
     connect(m_connectionList, &QListWidget::itemSelectionChanged, this, &MainWindow::onSelectionChanged);
     connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -159,6 +169,120 @@ void MainWindow::onSelectionChanged()
         m_selectedUuid.clear();
         m_connectBtn->setText("Connect");
     }
+}
+
+void MainWindow::onImport()
+{
+    QString filePath = QFileDialog::getOpenFileName(this, "Import VPN Configuration",
+        QString(), "Config files (*.conf *.nmconnection);;All files (*)");
+    if (filePath.isEmpty())
+        return;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
+
+    QString content = QString::fromUtf8(file.readAll());
+    file.close();
+
+    QMap<QString, QString> data;
+
+    if (content.trimmed().startsWith("conn ")) {
+        QRegularExpression connRx("^conn\\s+(\\S+)", QRegularExpression::MultilineOption);
+        auto connMatch = connRx.match(content);
+        if (connMatch.hasMatch())
+            data["name"] = connMatch.captured(1);
+
+        auto extract = [&](const QString &key) {
+            QRegularExpression rx(QString("^\\s+%1\\s*=\\s*(\\S+)").arg(key),
+                                  QRegularExpression::MultilineOption);
+            auto m = rx.match(content);
+            return m.hasMatch() ? m.captured(1) : QString();
+        };
+
+        QString gateway = extract("right");
+        if (!gateway.isEmpty()) data["gateway"] = gateway;
+        QString user = extract("leftxauthusername");
+        if (!user.isEmpty()) data["username"] = user;
+        QString ike = extract("ike");
+        if (!ike.isEmpty()) data["ike"] = ike;
+        QString esp = extract("esp");
+        if (!esp.isEmpty()) data["esp"] = esp;
+        QString aggressive = extract("aggressive");
+        if (!aggressive.isEmpty()) data["aggressive"] = aggressive;
+        QString subnet = extract("rightsubnet");
+        if (!subnet.isEmpty()) data["subnet"] = subnet;
+
+        QFileInfo fi(filePath);
+        QString secretsPath = fi.absolutePath() + "/" + fi.completeBaseName() + ".secrets";
+        QFile secretsFile(secretsPath);
+        if (secretsFile.exists() && secretsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QString secretsContent = QString::fromUtf8(secretsFile.readAll());
+            secretsFile.close();
+            QRegularExpression pskRx(": PSK\\s+\"([^\"]+)\"");
+            auto pskMatch = pskRx.match(secretsContent);
+            if (pskMatch.hasMatch())
+                data["psk"] = pskMatch.captured(1);
+            QRegularExpression xauthRx("\\S+\\s+: XAUTH\\s+\"([^\"]+)\"");
+            auto xauthMatch = xauthRx.match(secretsContent);
+            if (xauthMatch.hasMatch())
+                data["password"] = xauthMatch.captured(1);
+        }
+    } else if (content.contains("[vpn]")) {
+        QSettings settings(filePath, QSettings::IniFormat);
+
+        QString name = settings.value("connection/id").toString();
+        if (!name.isEmpty()) data["name"] = name;
+
+        QString gateway = settings.value("vpn/address").toString();
+        if (!gateway.isEmpty()) data["gateway"] = gateway;
+
+        QString psk = settings.value("vpn/psk").toString();
+        if (!psk.isEmpty()) data["psk"] = psk;
+
+        QString username = settings.value("vpn/leftxauthusername").toString();
+        if (!username.isEmpty()) data["username"] = username;
+
+        QString password = settings.value("vpn-secrets/xauthpassword").toString();
+        if (!password.isEmpty()) data["password"] = password;
+
+        QString ike = settings.value("vpn/ike").toString();
+        if (!ike.isEmpty()) data["ike"] = ike;
+
+        QString esp = settings.value("vpn/esp").toString();
+        if (!esp.isEmpty()) data["esp"] = esp;
+
+        QString aggressive = settings.value("vpn/aggressive").toString();
+        if (!aggressive.isEmpty()) data["aggressive"] = aggressive;
+
+        QString encap = settings.value("vpn/encap").toString();
+        if (!encap.isEmpty()) data["encap"] = encap;
+
+        QString virtual_ = settings.value("vpn/virtual").toString();
+        if (!virtual_.isEmpty()) data["virtual"] = virtual_;
+
+        QString subnet = settings.value("vpn/rightsubnet").toString();
+        if (!subnet.isEmpty()) data["subnet"] = subnet;
+
+        if (psk.isEmpty())
+            psk = settings.value("vpn-secrets/psk").toString();
+        if (!psk.isEmpty() && data["psk"].isEmpty())
+            data["psk"] = psk;
+    }
+
+    VpnDialog dlg(VpnDialog::Add, this, data);
+    if (dlg.exec() == QDialog::Accepted)
+        refreshList();
+}
+
+void MainWindow::onHelp()
+{
+    QMessageBox::about(this, "About IPsec Client",
+        "<h3>IPsec Client v1.x.x</h3>"
+        "<p>A GUI for managing strongSwan VPN connections.</p>"
+        "<p>Use the <b>Add</b> button to create a new connection, "
+        "or <b>Import</b> to load a .conf or .nmconnection file.</p>"
+        "<p>Select a connection and click <b>Connect</b>/<b>Disconnect</b> to toggle it.</p>");
 }
 
 void MainWindow::onProcessFinished()

@@ -37,4 +37,9 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "IPsec Client Team <team@ipsec-client.exampl
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_PROCESSOR}")
 set(CPACK_STRIP_FILES TRUE)
 
+# Install rules
+install(TARGETS ipsec-client DESTINATION bin)
+install(FILES data/ipsec-client.desktop DESTINATION share/applications)
+install(FILES data/icons/ipsec-client.svg DESTINATION share/icons/hicolor/scalable/apps)
+
 include(CPack)

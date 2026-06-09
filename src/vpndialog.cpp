@@ -74,9 +74,28 @@ VpnDialog::VpnDialog(Mode mode, QWidget *parent,
     connect(m_authCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this]() { m_pskEdit->setVisible(m_authCombo->currentText() == "PSK"); });
 
-    if (mode == Edit) {
+    if (connectionData.contains("name"))
         m_nameEdit->setText(connectionData.value("name"));
-    }
+    if (connectionData.contains("gateway"))
+        m_gatewayEdit->setText(connectionData.value("gateway"));
+    if (connectionData.contains("psk"))
+        m_pskEdit->setText(connectionData.value("psk"));
+    if (connectionData.contains("username"))
+        m_userEdit->setText(connectionData.value("username"));
+    if (connectionData.contains("password"))
+        m_passEdit->setText(connectionData.value("password"));
+    if (connectionData.contains("ike"))
+        m_ikeEdit->setText(connectionData.value("ike"));
+    if (connectionData.contains("esp"))
+        m_espEdit->setText(connectionData.value("esp"));
+    if (connectionData.contains("subnet"))
+        m_subnetEdit->setText(connectionData.value("subnet"));
+    if (connectionData.value("aggressive") == "yes")
+        m_aggressiveCheck->setChecked(true);
+    if (connectionData.value("encap") == "yes")
+        m_encapCheck->setChecked(true);
+    if (connectionData.value("virtual") == "yes")
+        m_virtualCheck->setChecked(true);
 
     onAuthChanged();
 }

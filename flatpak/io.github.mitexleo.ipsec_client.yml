@@ -1,0 +1,19 @@
+id: io.github.mitexleo.ipsec_client
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: ipsec-client
+finish-args:
+  - --socket=x11
+  - --share=network
+  - --socket=session-bus
+  - --talk-name=org.freedesktop.NetworkManager
+  - --system-talk-name=org.freedesktop.NetworkManager
+modules:
+  - name: ipsec-client
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    sources:
+      - type: dir
+        path: ..

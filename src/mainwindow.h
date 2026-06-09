@@ -18,6 +18,8 @@ private slots:
     void onAdd();
     void onEdit();
     void onDelete();
+    void onImport();
+    void onHelp();
     void onConnectToggle();
     void refreshList();
     void onSelectionChanged();
@@ -31,6 +33,8 @@ private:
     QPushButton *m_addBtn;
     QPushButton *m_editBtn;
     QPushButton *m_deleteBtn;
+    QPushButton *m_importBtn;
+    QPushButton *m_helpBtn;
     QPushButton *m_connectBtn;
     QLabel *m_statusLabel;
     QProcess *m_process;

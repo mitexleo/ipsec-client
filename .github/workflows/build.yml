@@ -18,6 +18,8 @@ jobs:
             container: null
           - target: fedora
             container: fedora:latest
+          - target: flatpak
+            container: null
 
     container: ${{ matrix.container }}
 
@@ -36,22 +38,50 @@ jobs:
         run: |
           dnf install -y cmake gcc-c++ qt6-qtbase-devel
 
-      - name: Build
+      - name: Install Flatpak dependencies
+        if: matrix.target == 'flatpak'
+        run: |
+          apt update
+          apt install -y flatpak flatpak-builder
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install -y flathub org.freedesktop.Platform//24.08 org.kde.Platform//6.8 org.kde.Sdk//6.8
+
+      - name: Build (native)
+        if: matrix.target != 'flatpak'
         run: |
           mkdir build && cd build
           cmake ..
           make -j$(nproc)
 
-      - name: Package
+      - name: Build (Flatpak)
+        if: matrix.target == 'flatpak'
+        run: |
+          flatpak-builder --force-clean build-dir flatpak/io.github.mitexleo.ipsec_client.yml
+
+      - name: Package (native)
+        if: matrix.target != 'flatpak'
         run: |
           cd build
           cpack
 
+      - name: Export Flatpak
+        if: matrix.target == 'flatpak'
+        run: |
+          flatpak build-export export-dir build-dir
+
       - name: Upload package
+        if: matrix.target != 'flatpak'
         uses: actions/upload-artifact@v4
         with:
           name: package-${{ matrix.target }}
           path: build/*.deb build/*.rpm
+
+      - name: Upload Flatpak artifact
+        if: matrix.target == 'flatpak'
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-flatpak
+          path: export-dir
 
   release:
     name: Create Release

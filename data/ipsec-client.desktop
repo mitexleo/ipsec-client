@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=IPsec Client
+Comment=Manage IPsec VPN connections
+Exec=ipsec-client
+Icon=ipsec-client
+Terminal=false
+Type=Application
+Categories=Network;VPN;
+StartupNotify=true
