@@ -97,7 +97,7 @@ jobs:
           path: |
             ~/.local/share/flatpak
             .flatpak-builder
-          key: flatpak-${{ runner.os }}-kde-6.8
+          key: flatpak-${{ runner.os }}-kde-6.10
 
       - name: Add Flathub remote
         if: steps.cache-flatpak.outputs.cache-hit != 'true'
@@ -106,8 +106,8 @@ jobs:
       - name: Install KDE Platform and SDK
         if: steps.cache-flatpak.outputs.cache-hit != 'true'
         run: |
-          flatpak install --user -y flathub org.kde.Platform//6.8
-          flatpak install --user -y flathub org.kde.Sdk//6.8
+          flatpak install --user -y flathub org.kde.Platform//6.10
+          flatpak install --user -y flathub org.kde.Sdk//6.10
 
       - name: Build Flatpak
         run: |
